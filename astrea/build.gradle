@@ -68,6 +68,10 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.19.1'
     implementation "androidx.lifecycle:lifecycle-service:2.11.0"
 
+    implementation 'com.google.protobuf:protobuf-javalite:4.36.2'
+    compileOnly 'org.checkerframework:checker-qual:4.3.0'
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
     //gRPC for comms + annotations for compiled code
     implementation 'io.grpc:grpc-android:1.84.1'
     implementation 'io.grpc:grpc-binder:1.84.1'
