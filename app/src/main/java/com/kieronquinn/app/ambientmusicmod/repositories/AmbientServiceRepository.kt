@@ -11,7 +11,8 @@ import com.kieronquinn.app.pixelambientmusic.IRecognitionService
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 
 interface AmbientServiceRepository {
 
@@ -39,25 +40,61 @@ class AmbientServiceRepositoryImpl(
             if(!it.safePing()) return@let
             return@withLock it
         }
-        suspendCoroutine {
-            var hasResumed = false
-            val serviceConnection = object: ServiceConnection {
-                override fun onServiceConnected(component: ComponentName, binder: IBinder) {
-                    serviceConnection = this
-                    val service = IRecognitionService.Stub.asInterface(binder)
-                    this@AmbientServiceRepositoryImpl.service = service
-                    if(!hasResumed) {
-                        hasResumed = true
-                        it.resume(service)
+        service = null
+        serviceConnection?.let { unbind(it) }
+        withTimeoutOrNull(5000L) {
+            suspendCancellableCoroutine<IRecognitionService?> { continuation ->
+                val connection = object: ServiceConnection {
+                    override fun onServiceConnected(component: ComponentName, binder: IBinder) {
+                        if(!continuation.isActive) {
+                            unbind(this)
+                            return
+                        }
+                        val connected = IRecognitionService.Stub.asInterface(binder)
+                        service = connected
+                        serviceConnection = this
+                        continuation.resume(connected)
+                    }
+
+                    override fun onServiceDisconnected(component: ComponentName) {
+                        service = null
+                        if(continuation.isActive) continuation.resume(null)
+                    }
+
+                    override fun onBindingDied(component: ComponentName) {
+                        unbind(this)
+                        if(continuation.isActive) continuation.resume(null)
+                    }
+
+                    override fun onNullBinding(component: ComponentName) {
+                        unbind(this)
+                        if(continuation.isActive) continuation.resume(null)
                     }
                 }
-
-                override fun onServiceDisconnected(component: ComponentName) {
-                    serviceConnection = null
-                    service = null
+                val bound = try {
+                    context.bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE)
+                } catch (e: SecurityException) {
+                    false
+                }
+                if(!bound) {
+                    if(continuation.isActive) continuation.resume(null)
+                } else {
+                    serviceConnection = connection
+                    continuation.invokeOnCancellation { unbind(connection) }
                 }
             }
-            context.bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+        }
+    }
+
+    private fun unbind(connection: ServiceConnection) {
+        try {
+            context.unbindService(connection)
+        } catch (e: IllegalArgumentException) {
+            //Binding may already have been released by Android or cancellation.
+        }
+        if(serviceConnection === connection) {
+            serviceConnection = null
+            service = null
         }
     }
 

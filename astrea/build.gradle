@@ -2,13 +2,13 @@ plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'kotlin-kapt'
-    id 'dagger.hilt.android.plugin'
+    id 'com.google.dagger.hilt.android'
     id 'com.google.protobuf'
     id 'com.google.devtools.ksp'
 }
 
 android {
-    compileSdk 33
+    compileSdk 37
 
     defaultConfig {
         minSdk 28
@@ -36,14 +36,11 @@ android {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.22.3"
+        artifact = "com.google.protobuf:protoc:4.36.2"
     }
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.54.0'
-        }
-        javalite {
-            artifact = 'com.google.protobuf:protoc-gen-javalite:3.0.0'
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.84.1'
         }
     }
     generateProtoTasks {
@@ -65,38 +62,38 @@ protobuf {
 
 dependencies {
     //AndroidX for basic (mainly Annotations), Room and LifecycleService
-    def room_version = "2.6.1"
+    def room_version = "2.8.5"
     implementation "androidx.room:room-runtime:$room_version"
     ksp "androidx.room:room-compiler:$room_version"
-    implementation 'androidx.core:core-ktx:1.13.1'
-    implementation "androidx.lifecycle:lifecycle-service:2.8.5"
+    implementation 'androidx.core:core-ktx:1.19.1'
+    implementation "androidx.lifecycle:lifecycle-service:2.11.0"
 
     //gRPC for comms + annotations for compiled code
-    implementation 'io.grpc:grpc-android:1.54.0'
-    implementation 'io.grpc:grpc-binder:1.54.0'
-    implementation 'io.grpc:grpc-stub:1.57.0'
-    implementation 'io.grpc:grpc-okhttp:1.54.0'
-    implementation 'io.grpc:grpc-protobuf-lite:1.57.0'
+    implementation 'io.grpc:grpc-android:1.84.1'
+    implementation 'io.grpc:grpc-binder:1.84.1'
+    implementation 'io.grpc:grpc-stub:1.84.1'
+    implementation 'io.grpc:grpc-okhttp:1.84.1'
+    implementation 'io.grpc:grpc-protobuf-lite:1.84.1'
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
 
     //okhttp for networking
-    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.squareup.okhttp3:okhttp:5.5.0'
 
     //Flogger for logging
-    implementation 'com.google.flogger:flogger:0.7.4'
-    implementation 'com.google.flogger:google-extensions:0.7.4'
+    implementation 'com.google.flogger:flogger:0.9'
+    implementation 'com.google.flogger:google-extensions:0.9'
 
     //Dagger + Hilt for injection
-    implementation "com.google.dagger:hilt-android:2.50"
-    implementation 'com.google.dagger:dagger:2.50'
-    kapt 'com.google.dagger:dagger-compiler:2.50'
-    kapt "com.google.dagger:hilt-compiler:2.50"
+    implementation "com.google.dagger:hilt-android:2.60.1"
+    implementation 'com.google.dagger:dagger:2.60.1'
+    kapt 'com.google.dagger:dagger-compiler:2.60.1'
+    kapt "com.google.dagger:hilt-compiler:2.60.1"
 
     //Other Google requirements
-    implementation "com.google.guava:guava:32.0.1-android"
-    kapt 'com.google.auto.value:auto-value:1.9'
-    compileOnly 'com.jakewharton.auto.value:auto-value-annotations:1.4'
-    implementation 'com.ryanharter.auto.value:auto-value-parcel:0.2.5'
+    implementation "com.google.guava:guava:33.7.2-android"
+    kapt 'com.google.auto.value:auto-value:1.11.1'
+    compileOnly 'com.jakewharton.auto.value:auto-value-annotations:1.5'
+    implementation 'com.ryanharter.auto.value:auto-value-parcel:0.2.9'
 
     //System stubs (not included in APK) for DeviceConfig, which will be ignored
     compileOnly project(path: ':systemstubs')

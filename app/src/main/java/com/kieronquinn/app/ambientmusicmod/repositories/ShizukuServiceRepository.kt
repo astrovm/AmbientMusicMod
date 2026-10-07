@@ -114,7 +114,7 @@ class ShizukuServiceRepositoryImpl(
 
     override suspend fun <T> runWithService(
         block: (IShellProxy) -> T
-    ): ShizukuServiceResponse<T> = runLock.withLock {
+    ): ShizukuServiceResponse<T> = try { runLock.withLock {
         service?.let {
             if(!it.safePing()){
                 //Service has disconnected or died
@@ -122,13 +122,22 @@ class ShizukuServiceRepositoryImpl(
                 serviceConnection = null
                 return@let
             }
-            return ShizukuServiceResponse.Success(block(it))
+            return@withLock ShizukuServiceResponse.Success(block(it))
         }
         if(awaitShizuku() != true)
             return ShizukuServiceResponse.Failed(FailureReason.NO_BINDER)
         if(!requestPermission())
             return ShizukuServiceResponse.Failed(FailureReason.PERMISSION_DENIED)
-        return ShizukuServiceResponse.Success(block(getService()))
+        ShizukuServiceResponse.Success(block(getService()))
+    }} catch (e: RemoteException) {
+        service = null
+        ShizukuServiceResponse.Failed(FailureReason.NO_BINDER)
+    } catch (e: IllegalStateException) {
+        //Shizuku can restart between pingBinder and checkSelfPermission.
+        service = null
+        ShizukuServiceResponse.Failed(FailureReason.NO_BINDER)
+    } catch (e: SecurityException) {
+        ShizukuServiceResponse.Failed(FailureReason.PERMISSION_DENIED)
     }
 
     override fun <T> runWithServiceIfAvailable(

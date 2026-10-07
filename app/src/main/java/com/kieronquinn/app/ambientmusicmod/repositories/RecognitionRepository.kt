@@ -4,6 +4,7 @@ import android.content.Context
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Handler
+import android.os.RemoteException
 import android.os.Looper
 import android.util.Log
 import com.google.audio.ambientmusic.HistoryData
@@ -100,6 +101,7 @@ class RecognitionRepositoryImpl(
         if(settings !is SettingsState.Available || !settings.mainEnabled){
             trySend(RecognitionState.Error(ErrorReason.DISABLED))
             close()
+            return@callbackFlow
         }
         var hasStarted = false
         async {
@@ -142,13 +144,28 @@ class RecognitionRepositoryImpl(
             close()
             return@callbackFlow
         }
-        val callbackId = service.addRecognitionCallback(callback, metadata)
-        requestBlock(service)
+        val callbackId = try {
+            service.addRecognitionCallback(callback, metadata)
+        } catch (e: RemoteException) {
+            trySend(RecognitionState.Error(ErrorReason.API_INCOMPATIBLE))
+            close()
+            return@callbackFlow
+        }
+        try {
+            requestBlock(service)
+        } catch (e: RemoteException) {
+            trySend(RecognitionState.Error(ErrorReason.API_INCOMPATIBLE))
+            close()
+        }
         awaitClose {
             callbackId?.let {
                 //We need to disconnect regardless, even if the flow scope has gone
                 GlobalScope.launch {
-                    getService()?.removeRecognitionCallback(it)
+                    try {
+                        service.removeRecognitionCallback(it)
+                    } catch (e: RemoteException) {
+                        //The companion may have died while completing this request.
+                    }
                 }
             }
         }
