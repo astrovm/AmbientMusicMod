@@ -30,6 +30,12 @@ interface AccessibilityRepository {
 class AccessibilityRepositoryImpl(context: Context): AccessibilityRepository {
 
     companion object {
+        internal fun isServiceEnabled(current: String?): Boolean {
+            return current?.split(',', ':')?.any {
+                ComponentName.unflattenFromString(it.trim()) == COMPONENT_ACCESSIBILITY_SERVICE
+            } == true
+        }
+
         private val COMPONENT_ACCESSIBILITY_SERVICE = ComponentName(
             BuildConfig.APPLICATION_ID, LockscreenOverlayAccessibilityService::class.java.name
         )
@@ -41,17 +47,7 @@ class AccessibilityRepositoryImpl(context: Context): AccessibilityRepository {
         Settings.Secure.getUriFor(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
         context.secureStringConverter(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
     ).map { current ->
-        if(current == null) return@map false
-        val currentSet = when {
-            current.contains(",") -> {
-                current.split(",").toSet()
-            }
-            current.contains(":") -> {
-                current.split(":").toSet()
-            }
-            else -> setOf(current)
-        }
-        currentSet.contains(COMPONENT_ACCESSIBILITY_SERVICE.flattenToString())
+        isServiceEnabled(current)
     }
 
     override fun bringToFrontOnAccessibilityStart(fragment: Fragment) {
