@@ -26,8 +26,8 @@ import java.io.IOException;
 import javax.inject.Inject;
 
 /** Service providing GRPC connection to PCS. */
-@AndroidEntryPoint(LifecycleService.class)
-public class AstreaGrpcService extends Hilt_AstreaGrpcService {
+@AndroidEntryPoint
+public class AstreaGrpcService extends LifecycleService {
   private static final GoogleLogger logger = GoogleLogger.forEnclosingClass();
 
   @Inject GrpcServerEndpointConfiguration configuration;
