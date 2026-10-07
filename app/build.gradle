@@ -48,6 +48,7 @@ android {
 
         buildConfigField "String", "DEFAULT_MANIFEST", "\"" + DEFAULT_MANIFEST + "\""
         buildConfigField "String", "DEFAULT_MANIFEST_V3", "\"" + DEFAULT_MANIFEST_V3 + "\""
+        buildConfigField "String", "UPDATES_OWNER", "\"astrovm\""
         buildConfigField "String", "TAG_NAME", "\"${tagName}\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

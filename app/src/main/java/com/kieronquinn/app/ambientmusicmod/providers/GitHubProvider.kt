@@ -1,5 +1,6 @@
 package com.kieronquinn.app.ambientmusicmod.providers
 
+import com.kieronquinn.app.ambientmusicmod.BuildConfig
 import com.kieronquinn.app.ambientmusicmod.model.github.GitHubRelease
 import retrofit2.Call
 import retrofit2.Retrofit
@@ -10,7 +11,7 @@ interface GitHubProvider {
 
     companion object {
         fun getGitHubProvider(repository: String): GitHubProvider = Retrofit.Builder()
-            .baseUrl("https://api.github.com/repos/KieronQuinn/$repository/")
+            .baseUrl("https://api.github.com/repos/${BuildConfig.UPDATES_OWNER}/$repository/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(GitHubProvider::class.java)
