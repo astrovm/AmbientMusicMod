@@ -3,6 +3,9 @@ package com.kieronquinn.app.ambientmusicmod.repositories
 import android.app.Application
 import android.os.DeadObjectException
 import com.kieronquinn.app.ambientmusicmod.IShellProxy
+import com.kieronquinn.app.pixelambientmusic.IRecognitionCallback
+import com.kieronquinn.app.pixelambientmusic.model.RecognitionResult
+import com.kieronquinn.app.pixelambientmusic.model.RecognitionSource
 import com.kieronquinn.app.pixelambientmusic.IRecognitionService
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -85,4 +88,26 @@ class RecognitionRepositoryTest {
         assertEquals(listOf(RecognitionRepository.RecognitionState.Error(
             RecognitionRepository.RecognitionState.ErrorReason.TIMEOUT)), result)
     }
+    @Test fun startedRecognitionWithoutResultStillTimesOut() = runTest {
+        `when`(companion.addRecognitionCallback(any(), any())).thenAnswer { call ->
+            call.getArgument<IRecognitionCallback>(0).onRecognitionStarted()
+            null
+        }
+        val result = repository().requestRecognition().toList()
+        assertTrue(result.first() is RecognitionRepository.RecognitionState.Recognising)
+        assertEquals(RecognitionRepository.RecognitionState.Error(
+            RecognitionRepository.RecognitionState.ErrorReason.TIMEOUT), result.last())
+    }
+
+    @Test fun successfulRecognitionCompletesWithoutTimeout() = runTest {
+        val song = RecognitionResult("Test song", "Test artist", RecognitionSource.NNFP,
+            emptyArray(), null, null)
+        `when`(companion.addRecognitionCallback(any(), any())).thenAnswer { call ->
+            call.getArgument<IRecognitionCallback>(0).onRecognitionSucceeded(song, null)
+            null
+        }
+        val result = repository().requestRecognition().toList()
+        assertEquals(listOf(RecognitionRepository.RecognitionState.Recognised(song, null)), result)
+    }
+
 }

@@ -16,6 +16,9 @@ import com.kieronquinn.app.ambientmusicmod.utils.extensions.safeRegisterContentO
 import com.kieronquinn.app.pixelambientmusic.IRecognitionCallback
 import com.kieronquinn.app.pixelambientmusic.IRecognitionService
 import com.kieronquinn.app.pixelambientmusic.model.*
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.awaitClose
@@ -65,6 +68,7 @@ class RecognitionRepositoryImpl(
 
     companion object {
         private const val RECOGNITION_CALLBACK_TIMEOUT = 2500L
+        private const val RECOGNITION_RESULT_TIMEOUT = 90_000L
         private val URI_HISTORY = Uri.Builder()
             .scheme("content")
             .authority("com.google.android.as.pam.ambientmusic.historyprovider")
@@ -103,22 +107,15 @@ class RecognitionRepositoryImpl(
             close()
             return@callbackFlow
         }
-        var hasStarted = false
-        async {
-            delay(RECOGNITION_CALLBACK_TIMEOUT)
-            if(!hasStarted){
-                trySend(RecognitionState.Error(ErrorReason.TIMEOUT))
-                close()
-            }
-        }
+        val hasStarted = AtomicBoolean(false)
         val callback = object: IRecognitionCallback.Stub() {
             override fun onRecordingStarted() {
-                hasStarted = true
+                hasStarted.set(true)
                 trySend(RecognitionState.Recording(source))
             }
 
             override fun onRecognitionStarted() {
-                hasStarted = true
+                hasStarted.set(true)
                 trySend(RecognitionState.Recognising(source))
             }
 
@@ -126,41 +123,53 @@ class RecognitionRepositoryImpl(
                 result: RecognitionResult,
                 metadata: RecognitionMetadata?
             ) {
-                hasStarted = true
+                hasStarted.set(true)
                 trySend(RecognitionState.Recognised(result, metadata))
                 close()
             }
 
             override fun onRecognitionFailed(result: RecognitionFailure) {
-                hasStarted = true
+                hasStarted.set(true)
                 trySend(RecognitionState.Failed(result))
                 close()
             }
         }
         val metadata = RecognitionCallbackMetadata(source, includeAudio)
         val service = getService() ?: run {
-            hasStarted = true
+            hasStarted.set(true)
             trySend(RecognitionState.Error(ErrorReason.API_INCOMPATIBLE))
             close()
             return@callbackFlow
         }
         val callbackId = try {
-            service.addRecognitionCallback(callback, metadata)
+            withContext(Dispatchers.IO) { service.addRecognitionCallback(callback, metadata) }
         } catch (e: RemoteException) {
             trySend(RecognitionState.Error(ErrorReason.API_INCOMPATIBLE))
             close()
             return@callbackFlow
         }
+        val watchdog = launch {
+            delay(RECOGNITION_CALLBACK_TIMEOUT)
+            if(!hasStarted.get()) {
+                trySend(RecognitionState.Error(ErrorReason.TIMEOUT))
+                close()
+            } else {
+                delay(RECOGNITION_RESULT_TIMEOUT - RECOGNITION_CALLBACK_TIMEOUT)
+                trySend(RecognitionState.Error(ErrorReason.TIMEOUT))
+                close()
+            }
+        }
         try {
-            requestBlock(service)
+            withContext(Dispatchers.IO) { requestBlock(service) }
         } catch (e: RemoteException) {
             trySend(RecognitionState.Error(ErrorReason.API_INCOMPATIBLE))
             close()
         }
         awaitClose {
+            watchdog.cancel()
             callbackId?.let {
                 //We need to disconnect regardless, even if the flow scope has gone
-                GlobalScope.launch {
+                GlobalScope.launch(Dispatchers.IO) {
                     try {
                         service.removeRecognitionCallback(it)
                     } catch (e: RemoteException) {

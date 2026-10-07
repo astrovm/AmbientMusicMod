@@ -24,8 +24,8 @@ class AmbientServiceRepositoryImpl(
     private val context: Context
 ): AmbientServiceRepository {
 
-    private var service: IRecognitionService? = null
-    private var serviceConnection: ServiceConnection? = null
+    @Volatile private var service: IRecognitionService? = null
+    @Volatile private var serviceConnection: ServiceConnection? = null
     private val serviceLock = Mutex()
 
     private val serviceIntent by lazy {
@@ -46,7 +46,7 @@ class AmbientServiceRepositoryImpl(
             suspendCancellableCoroutine<IRecognitionService?> { continuation ->
                 val connection = object: ServiceConnection {
                     override fun onServiceConnected(component: ComponentName, binder: IBinder) {
-                        if(!continuation.isActive) {
+                        if(!continuation.isActive || serviceConnection !== this) {
                             unbind(this)
                             return
                         }
@@ -57,7 +57,7 @@ class AmbientServiceRepositoryImpl(
                     }
 
                     override fun onServiceDisconnected(component: ComponentName) {
-                        service = null
+                        if(serviceConnection === this) service = null
                         if(continuation.isActive) continuation.resume(null)
                     }
 
@@ -71,15 +71,16 @@ class AmbientServiceRepositoryImpl(
                         if(continuation.isActive) continuation.resume(null)
                     }
                 }
+                serviceConnection = connection
                 val bound = try {
                     context.bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE)
                 } catch (e: SecurityException) {
                     false
                 }
                 if(!bound) {
+                    if(serviceConnection === connection) serviceConnection = null
                     if(continuation.isActive) continuation.resume(null)
                 } else {
-                    serviceConnection = connection
                     continuation.invokeOnCancellation { unbind(connection) }
                 }
             }
