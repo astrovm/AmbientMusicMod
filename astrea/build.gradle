@@ -92,8 +92,9 @@ dependencies {
     //Other Google requirements
     implementation "com.google.guava:guava:33.7.2-android"
     kapt 'com.google.auto.value:auto-value:1.11.1'
-    compileOnly 'com.jakewharton.auto.value:auto-value-annotations:1.5'
-    implementation 'com.ryanharter.auto.value:auto-value-parcel:0.2.9'
+    compileOnly 'com.google.auto.value:auto-value-annotations:1.11.1'
+    kapt 'com.ryanharter.auto.value:auto-value-parcel:0.2.9'
+    implementation 'com.ryanharter.auto.value:auto-value-parcel-adapter:0.2.9'
 
     //System stubs (not included in APK) for DeviceConfig, which will be ignored
     compileOnly project(path: ':systemstubs')
