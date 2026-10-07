@@ -193,7 +193,9 @@ dependencies {
     implementation 'me.saket:better-link-movement-method:2.2.0'
 
     //Autostarter provides some OEM battery checks + starting settings for disabling them
-    implementation 'com.github.judemanutd:autostarter:1.1.0'
+    implementation('com.github.judemanutd:autostarter:1.1.0') {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-android-extensions-runtime'
+    }
 
     //Colour Picker for overlay text
     implementation 'com.github.duanhong169:colorpicker:1.1.6'
