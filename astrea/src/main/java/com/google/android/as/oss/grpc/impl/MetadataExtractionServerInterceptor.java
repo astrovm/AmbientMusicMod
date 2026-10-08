@@ -34,7 +34,7 @@ import io.grpc.ServerInterceptor;
  * <p>This class by default extracts a set of allowlisted metadata values and passes them along to
  * context. Bindable services can then read it directly from Context.currentContext().
  */
-@VisibleForTesting
+@VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
 public class MetadataExtractionServerInterceptor implements ServerInterceptor {
 
   @Override
