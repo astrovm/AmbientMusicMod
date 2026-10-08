@@ -17,6 +17,7 @@ import com.kieronquinn.app.pixelambientmusic.IRecognitionCallback
 import com.kieronquinn.app.pixelambientmusic.IRecognitionService
 import com.kieronquinn.app.pixelambientmusic.model.*
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.GlobalScope
@@ -63,7 +64,8 @@ interface RecognitionRepository {
 class RecognitionRepositoryImpl(
     private val ambientServiceRepository: AmbientServiceRepository,
     private val shizukuServiceRepository: ShizukuServiceRepository,
-    context: Context
+    context: Context,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ): RecognitionRepository, KoinComponent {
 
     companion object {
@@ -142,7 +144,7 @@ class RecognitionRepositoryImpl(
             return@callbackFlow
         }
         val callbackId = try {
-            withContext(Dispatchers.IO) { service.addRecognitionCallback(callback, metadata) }
+            withContext(ioDispatcher) { service.addRecognitionCallback(callback, metadata) }
         } catch (e: RemoteException) {
             trySend(RecognitionState.Error(ErrorReason.API_INCOMPATIBLE))
             close()
@@ -160,7 +162,7 @@ class RecognitionRepositoryImpl(
             }
         }
         try {
-            withContext(Dispatchers.IO) { requestBlock(service) }
+            withContext(ioDispatcher) { requestBlock(service) }
         } catch (e: RemoteException) {
             trySend(RecognitionState.Error(ErrorReason.API_INCOMPATIBLE))
             close()

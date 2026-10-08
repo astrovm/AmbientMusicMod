@@ -15,6 +15,8 @@ import com.kieronquinn.app.pixelambientmusic.IRecognitionService
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.StandardTestDispatcher
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -68,7 +70,8 @@ class RecognitionRepositoryTest {
             RemoteSettingsRepository.SettingsState.Available(enabled, false, true, null, null, false)
         ))
     }
-    private fun repository() = RecognitionRepositoryImpl(ambient, shizuku, RuntimeEnvironment.getApplication())
+    private fun TestScope.repository() = RecognitionRepositoryImpl(ambient, shizuku,
+        RuntimeEnvironment.getApplication(), StandardTestDispatcher(testScheduler))
 
     @Test fun disabledRecognitionNeverContactsCompanion() = runTest {
         setEnabled(false)
