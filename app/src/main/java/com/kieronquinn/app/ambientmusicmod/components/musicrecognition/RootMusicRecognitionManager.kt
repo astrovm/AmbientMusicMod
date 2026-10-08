@@ -119,7 +119,7 @@ class RootMusicRecognitionManager(private val context: Context, userId: Int) {
      */
     private fun CoroutineScope.streamAudio(
         serviceInfo: ServiceInfo,
-        @Nullable attributionTag: String,
+        attributionTag: String?,
         @NonNull recognitionRequest: RecognitionRequest,
         clientCallback: IMusicRecognitionManagerCallback,
         audioSink: ParcelFileDescriptor

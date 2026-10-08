@@ -220,9 +220,7 @@ class RecognitionFragment: BoundDialogFragment<FragmentRecognitionBinding>(Fragm
 
     override fun onResume() {
         super.onResume()
-        whenResumed {
-            jumpToState(viewModel.state.value)
-        }
+        jumpToState(viewModel.state.value)
     }
 
     private fun jumpToState(state: State?) = with(binding.root) {

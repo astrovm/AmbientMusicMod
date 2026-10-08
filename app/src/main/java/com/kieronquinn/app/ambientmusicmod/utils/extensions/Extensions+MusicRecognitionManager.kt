@@ -7,10 +7,10 @@ import kotlin.coroutines.resume
 
 const val MusicRecognitionManager_RECOGNITION_FAILED_NEEDS_ROOT: Int = -2
 
-suspend fun IMusicRecognitionService.getAttributionTag() = suspendCancellableCoroutine<String> {
+suspend fun IMusicRecognitionService.getAttributionTag() = suspendCancellableCoroutine<String?> {
     getAttributionTag(object: IMusicRecognitionAttributionTagCallback.Stub() {
-        override fun onAttributionTag(attributionTag: String) {
-            it.resume(attributionTag)
+        override fun onAttributionTag(attributionTag: String?) {
+            if(it.isActive) it.resume(attributionTag)
         }
     })
 }
