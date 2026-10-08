@@ -1,6 +1,11 @@
 package com.kieronquinn.app.ambientmusicmod.repositories
 
 import android.app.Application
+import android.content.Context
+import android.content.ContentResolver
+import android.database.MatrixCursor
+import android.net.Uri
+import kotlinx.coroutines.flow.first
 import android.os.DeadObjectException
 import com.kieronquinn.app.ambientmusicmod.IShellProxy
 import com.kieronquinn.app.pixelambientmusic.IRecognitionCallback
@@ -50,7 +55,12 @@ class RecognitionRepositoryTest {
     @Before fun setup() {
         `when`(shell.isCompatible).thenReturn(true)
         setEnabled(true)
-        startKoin { modules(module { single<RemoteSettingsRepository> { remote } }) }
+        val api = mock(ApiRepository::class.java)
+        `when`(api.assertCompatibility()).thenReturn(true)
+        startKoin { modules(module {
+            single<RemoteSettingsRepository> { remote }
+            single<ApiRepository> { api }
+        }) }
     }
     @After fun cleanup() { stopKoin() }
     private fun setEnabled(enabled: Boolean) {
@@ -108,6 +118,26 @@ class RecognitionRepositoryTest {
         }
         val result = repository().requestRecognition().toList()
         assertEquals(listOf(RecognitionRepository.RecognitionState.Recognised(song, null)), result)
+    }
+
+    private suspend fun readHistory(cursor: MatrixCursor) {
+        val context = mock(Context::class.java)
+        val resolver = mock(ContentResolver::class.java)
+        `when`(context.contentResolver).thenReturn(resolver)
+        `when`(resolver.query(any(Uri::class.java), any(), isNull(), isNull(), anyString()))
+            .thenReturn(cursor)
+        assertNull(RecognitionRepositoryImpl(ambient, shizuku, context).getLatestRecognition().first())
+        assertTrue(cursor.isClosed)
+    }
+
+    @Test fun emptyHistoryClosesCursor() = runTest {
+        readHistory(MatrixCursor(arrayOf("timestamp", "history_entry")))
+    }
+
+    @Test fun corruptHistoryClosesCursorAndReturnsNoSong() = runTest {
+        readHistory(MatrixCursor(arrayOf("timestamp", "history_entry")).apply {
+            addRow(arrayOf(123L, byteArrayOf(0xff.toByte())))
+        })
     }
 
 }

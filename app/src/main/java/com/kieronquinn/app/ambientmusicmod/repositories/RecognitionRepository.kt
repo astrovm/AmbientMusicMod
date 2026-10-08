@@ -204,25 +204,29 @@ class RecognitionRepositoryImpl(
     }
 
     private fun loadLatestRecognition(): LastRecognisedSong? {
-        val cursor = contentResolver.safeQuery(
+        return contentResolver.safeQuery(
             URI_HISTORY,
             arrayOf(COLUMN_HISTORY_TIMESTAMP, COLUMN_HISTORY_HISTORY_ENTRY),
             null,
             null,
             "$COLUMN_HISTORY_TIMESTAMP DESC"
-        )
-        if(cursor == null || cursor.count == 0 || cursor.isAfterLast) return null
-        cursor.moveToFirst()
-        val timestamp = cursor.getLong(0)
-        val historyEntry = cursor.getBlob(1)
-        if(timestamp == 0L || historyEntry == null) return null
-        val entry = HistoryData.Item.parseFrom(historyEntry)
-        return LastRecognisedSong(
-            entry.track.title,
-            entry.track.artist,
-            timestamp,
-            if(entry.source == "ON_DEMAND") RecognitionSource.ON_DEMAND else RecognitionSource.NNFP
-        )
+        )?.use { cursor ->
+            if(!cursor.moveToFirst()) return@use null
+            val timestamp = cursor.getLong(0)
+            val historyEntry = cursor.getBlob(1)
+            if(timestamp == 0L || historyEntry == null) return@use null
+            val entry = try {
+                HistoryData.Item.parseFrom(historyEntry)
+            } catch (e: com.google.protobuf.InvalidProtocolBufferException) {
+                return@use null
+            }
+            LastRecognisedSong(
+                entry.track.title,
+                entry.track.artist,
+                timestamp,
+                if(entry.source == "ON_DEMAND") RecognitionSource.ON_DEMAND else RecognitionSource.NNFP
+            )
+        }
     }
 
     override fun getLatestRecognition(): Flow<LastRecognisedSong?> = callbackFlow {
