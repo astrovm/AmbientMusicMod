@@ -213,3 +213,10 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.3.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
 }
+// Signed JVM providers must remain byte-for-byte intact on the test classpath.
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.instrumentation.excludes.add('org/bouncycastle/**')
+        variant.unitTest?.instrumentation?.excludes?.add('org/bouncycastle/**')
+    }
+}
