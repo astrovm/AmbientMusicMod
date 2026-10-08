@@ -1,3 +1,5 @@
+> Maintained fork under development. See [the maintenance audit](MAINTENANCE.md) and [paired companion fork](https://github.com/astrovm/NowPlaying). Fork builds require matching certificates and cannot update the original installation in place. The upstream installation links below describe the original release.
+
 ![Ambient Music Mod Banner](https://i.imgur.com/SPWAuFll.png)
 
 **Ambient Music Mod** | [Now Playing](https://github.com/KieronQuinn/NowPlaying)
