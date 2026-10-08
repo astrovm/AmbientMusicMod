@@ -14,7 +14,7 @@ import com.kieronquinn.app.ambientmusicmod.utils.extensions.whenCreated
 import com.kieronquinn.app.ambientmusicmod.utils.extensions.whenResumed
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
-import org.koin.androidx.viewmodel.ext.android.sharedViewModel
+import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class RootFragment: BoundFragment<FragmentRootBinding>(FragmentRootBinding::inflate) {
 
@@ -23,7 +23,7 @@ class RootFragment: BoundFragment<FragmentRootBinding>(FragmentRootBinding::infl
     }
 
     private val navigation by inject<RootNavigation>()
-    private val activityViewModel by sharedViewModel<MainActivityViewModel>()
+    private val activityViewModel by activityViewModel<MainActivityViewModel>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

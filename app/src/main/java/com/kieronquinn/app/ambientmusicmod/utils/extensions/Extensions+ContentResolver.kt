@@ -15,7 +15,7 @@ fun ContentResolver.safeQuery(
     selectionArgs: Array<String?>?,
     sortOrder: String?
 ): Cursor? {
-    ApiRepository.assertCompatibility()
+    if(!ApiRepository.assertCompatibility()) return null
     return try {
         query(uri, projection, selection, selectionArgs, sortOrder)
     }catch (e: SecurityException){

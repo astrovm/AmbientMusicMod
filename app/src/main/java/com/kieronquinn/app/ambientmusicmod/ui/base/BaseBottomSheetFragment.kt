@@ -24,7 +24,9 @@ import com.kieronquinn.app.ambientmusicmod.R
 import com.kieronquinn.app.ambientmusicmod.components.blur.BlurProvider
 import com.kieronquinn.app.ambientmusicmod.utils.extensions.awaitPost
 import com.kieronquinn.app.ambientmusicmod.utils.extensions.isDarkMode
-import com.kieronquinn.app.ambientmusicmod.utils.extensions.whenResumed
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withResumed
+import kotlinx.coroutines.launch
 import com.kieronquinn.monetcompat.core.MonetCompat
 import org.koin.android.ext.android.inject
 
@@ -142,19 +144,18 @@ abstract class BaseBottomSheetFragment<T: ViewBinding>(private val inflate: (Lay
     private fun applyBlur(ratio: Float){
         val dialogWindow = dialog?.window ?: return
         val appWindow = activity?.window ?: return
-        whenResumed {
+        viewLifecycleOwner.lifecycleScope.launch {
             dialogWindow.decorView.awaitPost()
-            blurProvider.applyDialogBlur(dialogWindow, appWindow, ratio)
+            viewLifecycleOwner.lifecycle.withResumed {
+                blurProvider.applyDialogBlur(dialogWindow, appWindow, ratio)
+            }
         }
     }
 
     override fun onResume() {
         super.onResume()
         if(isBlurShowing){
-            whenResumed {
-                view?.awaitPost()
-                applyBlur(1f)
-            }
+            applyBlur(1f)
         }
     }
 
