@@ -18,3 +18,5 @@ include ':app'
 include ':astrea'
 include ':systemstubs'
 include ':ondemandoverlay'
+
+apply from: "gradle/security-dependencies.gradle"
